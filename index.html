@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,6 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="Ethan's Poker"/>
 <meta name="theme-color" content="#07201a"/>
 <title>Ethan's Poker</title>
+<!-- Home screen icon — poker chip on green felt -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23072018'/%3E%3Cpolygon points='67,18 113,18 152,57 152,123 113,162 67,162 28,123 28,57' fill='%230d3d2b' stroke='%23c9a84c' stroke-width='5'/%3E%3Ccircle cx='90' cy='90' r='44' fill='%230f4a34'/%3E%3Ccircle cx='90' cy='90' r='44' fill='none' stroke='%23c9a84c' stroke-width='3' stroke-opacity='.4'/%3E%3Cg transform='translate(90,90)'%3E%3Cpath d='M0,-26 C12,-12 28,2 0,16 C-28,2 -12,-12 0,-26Z' fill='%23c9a84c'/%3E%3Cellipse cx='-9' cy='11' rx='9' ry='6' fill='%23c9a84c'/%3E%3Cellipse cx='9' cy='11' rx='9' ry='6' fill='%23c9a84c'/%3E%3Crect x='-4' y='14' width='8' height='10' rx='2' fill='%23c9a84c'/%3E%3C/g%3E%3C/svg%3E"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23072018'/%3E%3Cpolygon points='11,3 21,3 29,11 29,21 21,29 11,29 3,21 3,11' fill='%230d3d2b' stroke='%23c9a84c' stroke-width='1'/%3E%3Ccircle cx='16' cy='16' r='8' fill='%230f4a34'/%3E%3Cpath d='M16,9 C19,13 23,16 16,20 C9,16 13,13 16,9Z' fill='%23c9a84c'/%3E%3C/svg%3E"/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
 /* Prevent iOS zoom on input focus */
@@ -447,7 +451,7 @@ input:checked+.slider::before{transform:translateX(18px);background:#07201a;}
         </svg>
         <h2 class="hero-title">Ethan's <em>Poker Night</em></h2>
         <p class="hero-sub">Track buy-ins, cash outs, tournaments.<br/>See who's up all-time.</p>
-        <button class="btn btn-gold" id="startBtn" style="font-size:.72rem;padding:1rem 2.2rem;">♠ Start New Session</button>
+        <button class="btn btn-gold" id="startBtn" onclick="if(typeof openSession==='function')openSession()" style="font-size:16px;padding:1rem 2.2rem;">♠ Start New Session</button>
       </div>
     </div>
 
@@ -457,7 +461,7 @@ input:checked+.slider::before{transform:translateX(18px);background:#07201a;}
       <h2>Night <em>Summary</em></h2>
       <div id="summaryContent"></div>
       <hr class="divider"/>
-      <button class="btn btn-gold btn-full" id="newGameBtn">♠ Start New Session</button>
+      <button class="btn btn-gold btn-full" id="newGameBtn" onclick="if(typeof openSession==='function')openSession()">♠ Start New Session</button>
     </div>
 
     <!-- Leaderboard -->
@@ -1240,17 +1244,35 @@ function showMsg(id,text,type,duration){
 // ═══════════════════════════════════════════════════════
 function init(){
   S.players = loadPlayers().map(n=>({name:n,total:0,locked:false}));
-  // Wire up buttons
-  $('endBtn').addEventListener('click',doEnd);
-  $('navEnd').addEventListener('click',doEnd);
-  $('fab').addEventListener('click',doEnd);
-  $('startBtn').addEventListener('click',openSession);
-  $('newGameBtn').addEventListener('click',openSession);
-  // Connect to Firebase — this keeps history live across all phones
+  // Wire up buttons with both methods for iOS reliability
+  ['endBtn','navEnd','fab'].forEach(id=>{
+    const el=$(id); if(!el) return;
+    el.addEventListener('click', doEnd);
+    el.onclick = doEnd;
+  });
+  ['startBtn','newGameBtn'].forEach(id=>{
+    const el=$(id); if(!el) return;
+    el.addEventListener('click', openSession);
+    el.onclick = openSession;
+  });
+  // Connect to Firebase
   subscribeToHistory();
   subscribeToPlayers();
 }
-document.addEventListener('DOMContentLoaded',init);
+
+// Fire on DOMContentLoaded OR immediately if already loaded
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+// Re-wire on full window load as iOS fallback
+window.addEventListener('load', ()=>{
+  ['startBtn','newGameBtn'].forEach(id=>{ const el=$(id); if(el) el.onclick=openSession; });
+  ['endBtn','navEnd','fab'].forEach(id=>{ const el=$(id); if(el) el.onclick=doEnd; });
+});
 </script>
 </body>
 </html>
+
