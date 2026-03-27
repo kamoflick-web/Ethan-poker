@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Ethan's Poker"/>
+<meta name="theme-color" content="#07201a"/>
+<title>Ethan's Poker</title>
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ── RESET & TOKENS ── */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+html{-webkit-text-size-adjust:100%;}
+input,select,textarea,button{font-size:16px!important;}
+:root{
+  --gold:#c9a84c;--gold-l:#e8c96d;
+  --deep:#07201a;--felt:#0f4a34;
+  --win:#5dba7a;--loss:#e05050;
+  --cream:#f5efe0;--ivory:#fdfaf3;
+  --card:rgba(13,61,43,.28);
+  --bd:rgba(201,168,76,.15);--bd-hi:rgba(201,168,76,.45);
+  --muted:rgba(245,239,224,.42);
+  color-scheme:dark;
+}
+body{
+  background:radial-gradient(ellipse 100% 50% at 50% 0%,#133d2a 0%,var(--deep) 65%);
+  min-height:100dvh;color:var(--cream);
+  font-family:'IBM Plex Mono',monospace;
+  padding-bottom:calc(5.5rem + env(safe-area-inset-bottom));
+  overscroll-behavior:none;
+}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;opacity:.4;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");}
+body::after{content:'';position:fixed;top:0;left:0;right:0;height:3px;z-index:9100;
+  background:repeating-linear-gradient(90deg,var(--gold) 0,var(--gold) 8px,transparent 8px,transparent 14px);opacity:.3;}
+
+/* ── NAV ── */
+nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-content:space-between;
+  padding:calc(1rem + env(safe-area-inset-top)) 1.2rem 1rem;
+  background:rgba(5,24,18,.97);border-bottom:1px solid var(--bd);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
+.logo{display:flex;align-items:center;gap:.6rem;}
+.logo svg{width:34px;height:34px;flex-shrink:0;}
+.logo-text{display:flex;flex-direction:column;line-height:1;}
+.logo-main{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:900;color:var(--ivory);letter-spacing:.04em;}
+.logo-main em{font-style:italic;color:var(--gold);}
+.logo-sub{font-size:.48rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);opacity:.55;margin-top:.12rem;}
+.nav-r{display:flex;align-items:center;gap:.6rem;}
+#navTimer{display:none;font-size:.9rem;font-weight:700;color:var(--ivory);
+  background:rgba(201,168,76,.1);border:1px solid var(--bd-hi);padding:.25rem .6rem;}
+#navTimer.on{display:block;}
+#navEnd{display:none;padding:.4rem .8rem;background:rgba(224,80,80,.12);
+  border:1px solid rgba(224,80,80,.4);color:#e05050;
+  font-family:'IBM Plex Mono',monospace;font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;}
+#navEnd.on{display:block;}
+
+/* ── LAYOUT ── */
+.app{max-width:860px;margin:0 auto;padding:1.2rem 1rem;display:flex;flex-direction:column;gap:1.2rem;}
+.hidden{display:none!important;}
+.screen{display:none;}
+.screen.active{display:flex;flex-direction:column;gap:1.2rem;}
+
+/* ── CARD ── */
+.card{background:var(--card);border:1px solid var(--bd);padding:1.4rem;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,168,76,.04) 0%,transparent 55%);pointer-events:none;}
+
+/* ── TYPE ── */
+.lbl{font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);opacity:.65;margin-bottom:.35rem;}
+h2{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--ivory);margin-bottom:.25rem;}
+h2 em{font-style:italic;color:var(--gold);}
+h3{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--ivory);margin-bottom:.75rem;}
+.sub{font-size:.68rem;opacity:.42;line-height:1.7;margin-bottom:1rem;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
+  padding:.75rem 1.4rem;font-family:'IBM Plex Mono',monospace;font-size:.65rem;font-weight:500;
+  letter-spacing:.15em;text-transform:uppercase;border:none;cursor:pointer;
+  transition:all .15s;user-select:none;min-height:44px;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-l));color:var(--deep);}
+.btn-gold:active{filter:brightness(1.1);}
+.btn-outline{background:transparent;border:1px solid var(--bd-hi);color:var(--gold);}
+.btn-outline:active{background:rgba(201,168,76,.1);}
+.btn-danger{background:transparent;border:1px solid rgba(224,80,80,.35);color:#e05050;}
+.btn-danger:active{background:rgba(224,80,80,.1);}
+.btn:disabled{opacity:.28;pointer-events:none;}
+.btn-sm{padding:.5rem .85rem;font-size:.58rem;min-height:38px;}
+.btn-full{width:100%;}
+.divider{border:none;border-top:1px solid var(--bd);margin:.8rem 0;}
+
+/* ── TABS ── */
+.tabs{display:flex;background:rgba(13,61,43,.4);border:1px solid var(--bd);
+  overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab-btn{flex:1;min-width:68px;padding:.7rem .4rem;
+  font-family:'IBM Plex Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;
+  background:transparent;border:none;color:var(--muted);cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;min-height:44px;}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);background:rgba(201,168,76,.06);}
+.tab-pane{display:none;}
+.tab-pane.active{display:flex;flex-direction:column;gap:1.2rem;}
+
+/* ── PLAYER GRID ── */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:.5rem;margin-bottom:.75rem;}
+.pc{padding:.85rem .75rem;background:rgba(13,61,43,.2);border:1px solid rgba(201,168,76,.1);
+  cursor:pointer;transition:all .18s;min-height:60px;display:flex;flex-direction:column;justify-content:center;}
+.pc:active{transform:scale(.96);}
+.pc.sel{border-color:var(--gold);background:rgba(201,168,76,.1);transform:translateY(-2px);}
+.pc.locked{border-color:rgba(93,186,122,.35);background:rgba(93,186,122,.07);}
+.pc-name{font-size:.75rem;font-weight:500;color:var(--ivory);margin-bottom:.18rem;}
+.pc-amt{font-size:.6rem;opacity:.48;}
+.pc.locked .pc-amt{opacity:.8;color:var(--win);}
+
+/* ── INPUTS ── */
+.field{background:rgba(13,61,43,.4);border:1px solid var(--bd);color:var(--cream);
+  font-family:'IBM Plex Mono',monospace;padding:.72rem 1rem;outline:none;
+  min-height:44px;transition:border-color .2s;-webkit-appearance:none;border-radius:0;width:100%;}
+.field:focus{border-color:var(--gold);}
+.field::placeholder{opacity:.3;}
+.add-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem;}
+.add-row .field{flex:1;min-width:150px;}
+
+/* ── SEL BADGE ── */
+.sel-badge{font-size:.7rem;padding:.5rem .8rem;background:rgba(13,61,43,.4);
+  border:1px solid var(--bd);margin-bottom:.8rem;opacity:.5;}
+.sel-badge.on{opacity:1;border-color:var(--bd-hi);}
+
+/* ── CHIPS ── */
+.chip-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem;margin-bottom:.75rem;}
+.chip{padding:.85rem .4rem;background:rgba(13,61,43,.3);border:1px solid var(--bd);
+  color:var(--cream);font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:500;
+  cursor:pointer;transition:all .15s;min-height:50px;text-align:center;}
+.chip:active{transform:scale(.95);}
+.chip.sel{border-color:var(--gold);background:rgba(201,168,76,.12);color:var(--gold);}
+.cust-wrap{position:relative;margin-bottom:.75rem;}
+.cust-wrap::after{content:'€';position:absolute;right:.9rem;top:50%;transform:translateY(-50%);
+  color:var(--gold);opacity:.5;pointer-events:none;}
+
+/* ── CONFIRM BTN ── */
+.confirm-btn{width:100%;padding:1rem;background:linear-gradient(135deg,var(--gold),var(--gold-l));
+  color:var(--deep);border:none;cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:700;
+  letter-spacing:.15em;text-transform:uppercase;min-height:52px;}
+.confirm-btn:active:not(:disabled){filter:brightness(1.1);}
+.confirm-btn:disabled{opacity:.22;cursor:not-allowed;}
+
+/* ── MESSAGES ── */
+.msg{font-size:.68rem;min-height:1.1rem;margin-top:.45rem;line-height:1.5;}
+.ok{color:var(--win);}.err{color:var(--loss);}.info{color:var(--gold);opacity:.8;}
+
+/* ── STACK GRID ── */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.55rem;}
+.sgrid label{display:flex;flex-direction:column;gap:.3rem;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);opacity:.65;}
+
+/* ── TOGGLE ── */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;}
+.switch{position:relative;display:inline-block;width:44px;height:26px;flex-shrink:0;}
+.switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:rgba(255,255,255,.1);border-radius:26px;transition:.25s;cursor:pointer;}
+.slider::before{content:'';position:absolute;height:20px;width:20px;left:3px;bottom:3px;
+  background:var(--cream);border-radius:50%;transition:.25s;}
+input:checked+.slider{background:var(--gold);}
+input:checked+.slider::before{transform:translateX(18px);background:var(--deep);}
+
+/* ── PAYOUT / STANDINGS ── */
+.payout-opts{display:flex;flex-direction:column;gap:.55rem;margin-bottom:1rem;}
+.payout-opts label{display:flex;align-items:center;gap:.5rem;font-size:.68rem;cursor:pointer;padding:.4rem 0;}
+.payout-opts input{accent-color:var(--gold);width:16px;height:16px;}
+.standings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:.55rem;}
+.standings-grid label{display:flex;flex-direction:column;gap:.28rem;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);opacity:.65;}
+select.field{cursor:pointer;}
+
+/* ── NOTES ── */
+textarea.field{resize:vertical;min-height:70px;line-height:1.6;}
+
+/* ── SUMMARY ── */
+.t-card{padding:.75rem .95rem;background:rgba(201,168,76,.06);border:1px solid var(--bd-hi);
+  display:flex;align-items:center;justify-content:space-between;font-size:.7rem;flex-wrap:wrap;gap:.4rem;margin-bottom:.4rem;}
+.t-card .arrow{color:var(--gold);}
+.t-card .amt{font-family:'Playfair Display',serif;font-size:.95rem;color:var(--gold);}
+.t-card.settled{background:rgba(93,186,122,.06);border-color:rgba(93,186,122,.3);}
+.ledger{width:100%;border-collapse:collapse;font-size:.68rem;}
+.ledger th{text-align:left;padding:.58rem .75rem;font-size:.56rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);opacity:.65;border-bottom:1px solid var(--bd);}
+.ledger td{padding:.68rem .75rem;border-bottom:1px solid rgba(255,255,255,.04);}
+.ledger tr:last-child td{border-bottom:none;}
+.win{color:var(--win);font-weight:600;}.lose{color:var(--loss);font-weight:600;}
+
+/* ── STATS SECTIONS ── */
+.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem;}
+.pod{padding:.8rem .6rem;border:1px solid var(--bd);background:var(--card);text-align:center;}
+.pod.p1{border-color:rgba(255,215,0,.5);box-shadow:0 0 14px rgba(255,215,0,.07);}
+.pod.p2{border-color:rgba(192,192,192,.4);}
+.pod.p3{border-color:rgba(205,127,50,.4);}
+.pod-medal{font-size:.9rem;margin-bottom:.2rem;}
+.pod-name{font-family:'Playfair Display',serif;font-size:.8rem;font-weight:700;color:var(--ivory);margin-bottom:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pod-net{font-size:.85rem;font-weight:700;font-family:'Playfair Display',serif;}
+.pod-meta{font-size:.55rem;opacity:.38;margin-top:.12rem;}
+
+.lb-rows{display:flex;flex-direction:column;gap:.32rem;margin-bottom:1rem;}
+.lb-row{display:grid;grid-template-columns:1.5rem 1fr auto auto auto;
+  gap:.45rem;align-items:center;padding:.58rem .82rem;
+  border:1px solid var(--bd);background:rgba(13,61,43,.2);font-size:.68rem;}
+.lb-row .rk{color:var(--gold);opacity:.35;font-weight:700;}
+.lb-row .rnet{font-weight:700;}
+.lb-row .rmeta{opacity:.38;font-size:.6rem;}
+
+.chart-wrap{width:100%;min-height:180px;margin-top:.5rem;}
+
+.best-banner{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;
+  padding:.85rem 1rem;background:rgba(201,168,76,.06);border:1px solid var(--bd-hi);margin-bottom:1rem;}
+.best-val{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--gold);}
+.best-meta{font-size:.6rem;opacity:.45;margin-top:.1rem;}
+
+/* ── HISTORY ── */
+.h-list{display:flex;flex-direction:column;gap:.4rem;margin-top:.75rem;}
+.h-entry{padding:.85rem .95rem;border:1px solid var(--bd);background:rgba(13,61,43,.15);
+  display:flex;gap:.75rem;align-items:flex-start;flex-wrap:wrap;}
+.h-detail{flex:1;min-width:0;}
+.h-date{font-size:.56rem;opacity:.38;margin-bottom:.18rem;}
+.h-main{font-size:.68rem;line-height:1.75;}
+.h-note{font-size:.62rem;opacity:.4;font-style:italic;margin-top:.2rem;}
+
+/* ── LIVE ── */
+.live-chip{background:rgba(201,168,76,.1);border:1px solid var(--bd);padding:.2rem .5rem;font-size:.6rem;color:var(--win);}
+
+/* ── HERO ── */
+.hero{text-align:center;padding:2.4rem 1rem;}
+.hero-suits{font-size:1.8rem;letter-spacing:.4rem;opacity:.17;margin-bottom:1.1rem;}
+.hero-title{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:900;color:var(--ivory);line-height:1;margin-bottom:.28rem;}
+.hero-title em{color:var(--gold);font-style:italic;}
+.hero-sub{font-size:.72rem;opacity:.42;margin-bottom:1.9rem;line-height:1.7;}
+
+/* ── FAB ── */
+.fab{position:fixed;bottom:calc(1.4rem + env(safe-area-inset-bottom));right:1.1rem;
+  z-index:300;display:none;padding:.82rem 1.35rem;
+  background:linear-gradient(135deg,var(--gold),var(--gold-l));
+  color:var(--deep);border:none;cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;font-size:.62rem;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;
+  box-shadow:0 8px 24px rgba(0,0,0,.55);}
+.fab:active{transform:scale(.96);}
+.fab.on{display:block;}
+
+/* ── SYNC ── */
+#syncBar{display:none;position:fixed;bottom:calc(5rem + env(safe-area-inset-bottom));left:50%;
+  transform:translateX(-50%);padding:.4rem 1rem;
+  font-family:'IBM Plex Mono',monospace;font-size:.62rem;letter-spacing:.1em;
+  z-index:400;white-space:nowrap;transition:opacity .3s;}
+
+/* ── PULSE ── */
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.dot{width:7px;height:7px;background:var(--win);border-radius:50%;display:inline-block;margin-right:.35rem;animation:pulse 1.6s ease-in-out infinite;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:480px){
+  .app{padding:1rem .8rem;}.card{padding:1.05rem;}
+  .chip-grid{grid-template-columns:repeat(2,1fr);}
+  .podium{grid-template-columns:repeat(3,1fr);}
+}
+@media(min-width:600px){.fab{display:none!important;}#navEnd.on{display:block;}}
+@media(max-width:599px){#navEnd{display:none!important;}.fab.on{display:block;}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="11,2 25,2 34,11 34,25 25,34 11,34 2,25 2,11" fill="rgba(13,61,43,.9)" stroke="#c9a84c" stroke-width="1.2"/>
+      <circle cx="18" cy="18" r="11" fill="rgba(15,74,52,.98)"/>
+      <circle cx="18" cy="18" r="11" fill="none" stroke="rgba(201,168,76,.2)" stroke-width="1"/>
+      <g transform="translate(18,18)">
+        <path d="M0,-6.5 C3,-3 7,.5 0,4 C-7,.5 -3,-3 0,-6.5Z" fill="#c9a84c"/>
+        <ellipse cx="-2.2" cy="2.8" rx="2.2" ry="1.5" fill="#c9a84c"/>
+        <ellipse cx="2.2" cy="2.8" rx="2.2" ry="1.5" fill="#c9a84c"/>
+        <rect x="-1" y="3.5" width="2" height="2.5" rx=".4" fill="#c9a84c"/>
+      </g>
+    </svg>
+    <div class="logo-text">
+      <div class="logo-main">Ethan's <em>Poker</em></div>
+      <div class="logo-sub">Night Tracker</div>
+    </div>
+  </div>
+  <div class="nav-r">
+    <div id="navTimer">00:00</div>
+    <button id="navEnd" onclick="doEnd()">End Session</button>
+  </div>
+</nav>
+
+<div class="app">
+
+  <!-- HOME -->
+  <div id="homeScreen">
+
+    <div id="introHero" class="card">
+      <div class="hero">
+        <div class="hero-suits">♠ ♥ ♦ ♣</div>
+        <h2 class="hero-title">Ethan's <em>Poker Night</em></h2>
+        <p class="hero-sub">Track buy-ins, cash outs, tournaments.<br/>See who's up all-time.</p>
+        <button class="btn btn-gold" onclick="openSession()" style="padding:1rem 2.2rem;">♠ Start New Session</button>
+      </div>
+    </div>
+
+    <div id="summaryCard" class="card hidden">
+      <div class="lbl">♦ Last Session</div>
+      <h2>Night <em>Summary</em></h2>
+      <div id="summaryContent"></div>
+      <hr class="divider"/>
+      <button class="btn btn-gold btn-full" onclick="openSession()">♠ Start New Session</button>
+    </div>
+
+    <!-- CASH LEADERBOARD -->
+    <div id="cashSection" class="card hidden">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;">
+        <div><div class="lbl">♠ Cash Games</div><h2>Cash <em>Leaderboard</em></h2></div>
+        <div id="cashBest" style="font-size:.65rem;text-align:right;"></div>
+      </div>
+      <div id="cashPodium" class="podium"></div>
+      <div id="cashTable" class="lb-rows"></div>
+      <div class="chart-wrap"><canvas id="cashChart"></canvas></div>
+    </div>
+
+    <!-- TOURNAMENT LEADERBOARD -->
+    <div id="tournSection" class="card hidden">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;">
+        <div><div class="lbl">♣ Tournaments</div><h2>Tournament <em>Leaderboard</em></h2></div>
+        <div id="tournBest" style="font-size:.65rem;text-align:right;"></div>
+      </div>
+      <div id="tournPodium" class="podium"></div>
+      <div id="tournTable" class="lb-rows"></div>
+      <div class="chart-wrap"><canvas id="tournChart"></canvas></div>
+    </div>
+
+    <!-- ALL TIME -->
+    <div id="allSection" class="card hidden">
+      <div class="lbl">♦ All-Time Combined</div>
+      <h2>Overall <em>Rankings</em></h2>
+      <div id="bestBanner" class="best-banner hidden">
+        <div>
+          <div class="lbl" style="margin:0 0 .1rem;">🏆 Biggest Single Night Win</div>
+          <div id="bestVal" class="best-val"></div>
+          <div id="bestMeta" class="best-meta"></div>
+        </div>
+      </div>
+      <div id="allTable" class="lb-rows"></div>
+      <div class="chart-wrap"><canvas id="allChart"></canvas></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="historyCard" class="card hidden">
+      <div class="lbl">♣ Archive</div>
+      <h2>Session <em>History</em></h2>
+      <div id="historyContent"></div>
+    </div>
+
+  </div><!-- /home -->
+
+  <!-- SESSION -->
+  <div id="sessionScreen" class="screen">
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="t-seats">♥ Seats</button>
+      <button class="tab-btn" data-tab="t-buyin">♠ Buy-in</button>
+      <button class="tab-btn" data-tab="t-stacks">♦ Stacks</button>
+      <button class="tab-btn" data-tab="t-mode">♣ Mode</button>
+    </div>
+
+    <!-- SEATS -->
+    <div class="tab-pane active" id="t-seats">
+      <div class="card">
+        <div class="lbl">♥ Players</div>
+        <h3>Who's Playing Tonight?</h3>
+        <div id="pgrid" class="pgrid"></div>
+        <div class="add-row">
+          <input type="text" id="newName" class="field" placeholder="Add player (e.g. Sam.K)" autocorrect="off" autocapitalize="words"/>
+          <button class="btn btn-outline btn-sm" onclick="addPlayer()">+ Add</button>
+          <button class="btn btn-danger btn-sm" onclick="removePlayer()">− Remove</button>
+        </div>
+        <p id="seatMsg" class="msg info"></p>
+      </div>
+      <div class="card">
+        <div class="lbl"><span class="dot"></span>Live Pool</div>
+        <div id="liveContent" style="font-size:.7rem;opacity:.55;line-height:2;">No players in yet.</div>
+      </div>
+    </div>
+
+    <!-- BUY-IN -->
+    <div class="tab-pane" id="t-buyin">
+      <div class="card">
+        <div class="lbl">♠ Buy-In</div>
+        <h3>Add Chips</h3>
+        <div id="selBadge" class="sel-badge">No player selected — tap a name in Seats first</div>
+        <div class="chip-grid">
+          <button class="chip" data-amt="5" onclick="pickChip(this)">+€5</button>
+          <button class="chip" data-amt="10" onclick="pickChip(this)">+€10</button>
+          <button class="chip" data-amt="15" onclick="pickChip(this)">+€15</button>
+          <button class="chip" data-amt="20" onclick="pickChip(this)">+€20</button>
+          <button class="chip" data-amt="25" onclick="pickChip(this)">+€25</button>
+          <button class="chip" data-amt="30" onclick="pickChip(this)">+€30</button>
+          <button class="chip" data-amt="40" onclick="pickChip(this)">+€40</button>
+          <button class="chip" data-amt="50" onclick="pickChip(this)">+€50</button>
+        </div>
+        <div class="cust-wrap">
+          <input type="number" id="customAmt" class="field" placeholder="Custom amount" min="1" inputmode="decimal" oninput="pickCustom()"/>
+        </div>
+        <hr class="divider"/>
+        <button class="confirm-btn" id="confirmBtn" disabled onclick="confirmBuyin()">Confirm Buy-in</button>
+        <p id="buyinMsg" class="msg info"></p>
+      </div>
+    </div>
+
+    <!-- STACKS -->
+    <div class="tab-pane" id="t-stacks">
+      <div class="card">
+        <div class="lbl">♦ Cash Out</div>
+        <h3>Final Stacks</h3>
+        <p class="sub">Enter each player's chip count at end of night. Leave blank if someone busted out (counts as zero).</p>
+        <div id="sgrid" class="sgrid"></div>
+      </div>
+    </div>
+
+    <!-- MODE -->
+    <div class="tab-pane" id="t-mode">
+      <div class="card">
+        <div class="lbl">♣ Game Mode</div>
+        <h3>Cash Game or Tournament?</h3>
+        <div class="toggle-row">
+          <span style="font-size:.74rem;">Tournament Mode</span>
+          <label class="switch"><input type="checkbox" id="tournToggle" onchange="toggleTourney()"/><span class="slider"></span></label>
+        </div>
+        <p class="sub" id="modeDesc">Cash game: payouts match final stacks entered.</p>
+        <div id="payoutSection" class="hidden">
+          <div class="lbl" style="margin-bottom:.55rem;">Payout Structure</div>
+          <div class="payout-opts">
+            <label><input type="radio" name="payout" value="topHeavy" checked onchange="S.payout=this.value"/> 66% to 1st, 33% to 2nd</label>
+            <label><input type="radio" name="payout" value="refundThird" onchange="S.payout=this.value"/> 3rd gets buy-in back, rest split 60/40</label>
+          </div>
+          <div class="lbl" style="margin-bottom:.55rem;margin-top:.8rem;">Podium Planner</div>
+          <div class="standings-grid">
+            <label>🥇 1st<select id="firstSel" class="field" onchange="S.standings.first=this.value||null"></select></label>
+            <label>🥈 2nd<select id="secondSel" class="field" onchange="S.standings.second=this.value||null"></select></label>
+            <label>🥉 3rd<select id="thirdSel" class="field" onchange="S.standings.third=this.value||null"></select></label>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="lbl">📝 Notes</div>
+        <textarea id="sessionNotes" class="field" placeholder="e.g. best hand of the night was…"></textarea>
+      </div>
+      <div class="card" style="background:rgba(224,80,80,.05);border-color:rgba(224,80,80,.2);">
+        <div class="lbl">⚠ End Night</div>
+        <p class="sub" style="margin-bottom:.9rem;">Calculates all payouts and saves to history.</p>
+        <button class="btn btn-danger btn-full" onclick="doEnd()">End Session & Calculate</button>
+      </div>
+    </div>
+
+  </div><!-- /session -->
+</div>
+
+<button class="fab on-session" id="fab" onclick="doEnd()">End Night ♠</button>
+<div id="syncBar"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+// ════════════════════════════════════════
+// FIREBASE
+// ════════════════════════════════════════
+firebase.initializeApp({
+  apiKey:"AIzaSyCN1iJ2qPke-Zd53uPyeSw4scoTe1e913g",
+  authDomain:"ethans-poker.firebaseapp.com",
+  databaseURL:"https://ethans-poker-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"ethans-poker",
+  storageBucket:"ethans-poker.firebasestorage.app",
+  messagingSenderId:"742644263016",
+  appId:"1:742644263016:web:20f95c2ae23a1b16a773dd"
+});
+const db = firebase.database();
+
+// ════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════
+const DEF = ["Aaron.B","Luke.W","Eanna.B","Dara.O","Jack.M","David.K","Norbert.G","Thomas.D","Eric.P","Adam.J","Shane.G","Eoin.H"];
+
+const S = {
+  players: [],    // {name, total, locked}
+  sel: null,      // selected player name
+  amt: null,      // selected buy-in amount
+  stacks: {},     // {playerName: stackValue}
+  standings: {first:null, second:null, third:null},
+  tourney: false,
+  payout: 'topHeavy',
+  notes: '',
+  history: [],
+  fbKeys: {},     // local index → firebase key
+  inSession: false,
+  timerStart: null,
+  timerTick: null
+};
+let charts = {cash:null, tourn:null, all:null};
+
+// ════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════
+const fmt  = v => `€${Math.abs(v).toFixed(2)}`;
+const fmtS = v => (v >= 0 ? '+' : '−') + fmt(v);
+const $    = id => document.getElementById(id);
+const vibe = () => { try { navigator.vibrate && navigator.vibrate(15); } catch(e){} };
+
+function syncStatus(msg, type) {
+  const el = $('syncBar');
+  if (!msg) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.style.opacity = '1';
+  if (type === 'ok')      { el.style.background='rgba(93,186,122,.15)'; el.style.border='1px solid rgba(93,186,122,.4)'; el.style.color='#5dba7a'; }
+  else if(type === 'err') { el.style.background='rgba(224,80,80,.12)';  el.style.border='1px solid rgba(224,80,80,.35)'; el.style.color='#e05050'; }
+  else                    { el.style.background='rgba(201,168,76,.12)'; el.style.border='1px solid rgba(201,168,76,.4)'; el.style.color='#c9a84c'; }
+  el.textContent = msg;
+  if (type !== 'syncing') setTimeout(() => syncStatus(''), 3000);
+}
+
+const msgTimers = {};
+function showMsg(id, text, cls, ms) {
+  const el = $(id); if (!el) return;
+  el.textContent = text; el.className = 'msg ' + cls;
+  clearTimeout(msgTimers[id]);
+  if (ms) msgTimers[id] = setTimeout(() => { el.textContent=''; el.className='msg info'; }, ms);
+}
+
+// ════════════════════════════════════════
+// PLAYER MANAGEMENT
+// ════════════════════════════════════════
+function loadExtraPlayers() {
+  try { return JSON.parse(localStorage.getItem('ep_extra') || '[]'); } catch(e) { return []; }
+}
+function saveExtraPlayers() {
+  const extras = S.players.map(p => p.name).filter(n => !DEF.includes(n));
+  localStorage.setItem('ep_extra', JSON.stringify(extras));
+}
+function initPlayers() {
+  const extras = loadExtraPlayers();
+  S.players = [...DEF, ...extras].map(n => ({ name: n, total: 0, locked: false }));
+}
+
+function renderPlayers() {
+  const g = $('pgrid');
+  g.innerHTML = '';
+  S.players.forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'pc' + (p.locked ? ' locked' : '') + (S.sel === p.name ? ' sel' : '');
+    el.dataset.n = p.name;
+    el.innerHTML = `<div class="pc-name">${p.name}</div><div class="pc-amt">${p.locked ? fmt(p.total) + ' in' : '—'}</div>`;
+    el.onclick = () => selectPlayer(p.name);
+    g.appendChild(el);
+  });
+}
+
+function selectPlayer(name) {
+  S.sel = name;
+  renderPlayers();
+  updateBadge();
+  updateConfirmBtn();
+  switchTab('t-buyin');
+}
+
+function updateBadge() {
+  const el = $('selBadge');
+  if (!S.sel) { el.textContent = 'No player selected — tap a name in Seats first'; el.classList.remove('on'); return; }
+  const p = S.players.find(x => x.name === S.sel);
+  el.innerHTML = `<strong style="color:var(--gold)">${S.sel}</strong>${p && p.locked ? ' · ' + fmt(p.total) + ' in total' : ''}`;
+  el.classList.add('on');
+}
+
+function updateConfirmBtn() {
+  $('confirmBtn').disabled = !(S.sel && S.amt && S.amt > 0);
+}
+
+function addPlayer() {
+  const inp = $('newName'), name = inp.value.trim();
+  if (!name) { showMsg('seatMsg', 'Enter a name.', 'err', 2500); return; }
+  if (S.players.some(p => p.name.toLowerCase() === name.toLowerCase())) { showMsg('seatMsg', `${name} already exists.`, 'err', 2500); return; }
+  S.players.push({ name, total: 0, locked: false });
+  saveExtraPlayers();
+  inp.value = '';
+  showMsg('seatMsg', `${name} added!`, 'ok', 2500);
+  renderPlayers();
+  renderStandingSelects();
+}
+
+function removePlayer() {
+  if (!S.sel) { showMsg('seatMsg', 'Select a player first.', 'err', 2500); return; }
+  const p = S.players.find(x => x.name === S.sel);
+  if (p && p.locked) { showMsg('seatMsg', 'Cannot remove a player who has bought in.', 'err', 2500); return; }
+  S.players = S.players.filter(x => x.name !== S.sel);
+  saveExtraPlayers();
+  S.sel = null;
+  renderPlayers();
+  renderStandingSelects();
+  updateBadge();
+}
+
+// ════════════════════════════════════════
+// LIVE STATS
+// ════════════════════════════════════════
+function renderLive() {
+  const active = S.players.filter(p => p.locked);
+  const el = $('liveContent');
+  if (!active.length) { el.textContent = 'No players in yet.'; return; }
+  const pool = active.reduce((s, p) => s + p.total, 0);
+  el.innerHTML = `<div style="margin-bottom:.4rem;opacity:.55">Players: <strong style="color:var(--cream)">${active.length}</strong> &nbsp;·&nbsp; Pool: <strong style="color:var(--gold)">${fmt(pool)}</strong></div>
+    <div style="display:flex;flex-wrap:wrap;gap:.3rem;">${active.map(p => `<span class="live-chip">${p.name} ${fmt(p.total)}</span>`).join('')}</div>`;
+}
+
+// ════════════════════════════════════════
+// STACK GRID
+// ════════════════════════════════════════
+function renderStackGrid() {
+  const g = $('sgrid');
+  g.innerHTML = '';
+  const active = S.players.filter(p => p.locked);
+  if (!active.length) {
+    g.innerHTML = '<p style="font-size:.68rem;opacity:.38;">No players have bought in yet — go to Buy-in tab first.</p>';
+    return;
+  }
+  active.forEach(p => {
+    const lbl = document.createElement('label');
+    lbl.innerHTML = `${p.name}<input type="number" class="field" min="0" step="0.01" placeholder="0.00" inputmode="decimal" value="${S.stacks[p.name] || ''}" data-p="${p.name}"/>`;
+    g.appendChild(lbl);
+  });
+  g.querySelectorAll('input').forEach(i => i.addEventListener('input', () => { S.stacks[i.dataset.p] = i.value; }));
+}
+
+// ════════════════════════════════════════
+// STANDING SELECTS
+// ════════════════════════════════════════
+function renderStandingSelects() {
+  const locked = S.players.filter(p => p.locked).map(p => p.name);
+  ['firstSel','secondSel','thirdSel'].forEach((id, i) => {
+    const sel = $(id), cur = sel.value;
+    sel.innerHTML = `<option value="">— None —</option>` + locked.map(n => `<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
+    S.standings[['first','second','third'][i]] = sel.value || null;
+  });
+}
+
+// ════════════════════════════════════════
+// BUY-IN
+// ════════════════════════════════════════
+function pickChip(btn) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
+  btn.classList.add('sel');
+  S.amt = Number(btn.dataset.amt);
+  $('customAmt').value = '';
+  updateConfirmBtn();
+}
+
+function pickCustom() {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
+  const v = $('customAmt').value;
+  S.amt = v ? Number(v) : null;
+  updateConfirmBtn();
+}
+
+function confirmBuyin() {
+  if (!S.sel || !S.amt) return;
+  const p = S.players.find(x => x.name === S.sel);
+  p.total += S.amt;
+  p.locked = true;
+  showMsg('buyinMsg', `✓ ${fmt(S.amt)} added to ${p.name} · total: ${fmt(p.total)}`, 'ok', 3000);
+  vibe();
+  renderPlayers();
+  renderStackGrid();
+  renderStandingSelects();
+  renderLive();
+  updateBadge();
+  $('confirmBtn').disabled = true;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
+  $('customAmt').value = '';
+  S.amt = null;
+}
+
+// ════════════════════════════════════════
+// TOURNAMENT TOGGLE
+// ════════════════════════════════════════
+function toggleTourney() {
+  S.tourney = $('tournToggle').checked;
+  $('payoutSection').classList.toggle('hidden', !S.tourney);
+  $('modeDesc').textContent = S.tourney
+    ? 'Tournament: prize pool split by structure below.'
+    : 'Cash game: payouts match final stacks entered.';
+  if (S.tourney) renderStandingSelects();
+}
+
+// ════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === id));
+}
+document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+// ════════════════════════════════════════
+// TIMER
+// ════════════════════════════════════════
+function startTimer() {
+  S.timerStart = Date.now();
+  $('navTimer').classList.add('on');
+  $('navEnd').classList.add('on');
+  $('fab').classList.add('on');
+  S.timerTick = setInterval(() => {
+    const sec = Math.floor((Date.now() - S.timerStart) / 1000);
+    $('navTimer').textContent = `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
+  }, 1000);
+}
+function stopTimer() {
+  clearInterval(S.timerTick);
+  $('navTimer').classList.remove('on');
+  $('navEnd').classList.remove('on');
+  $('fab').classList.remove('on');
+  $('navTimer').textContent = '00:00';
+}
+
+// ════════════════════════════════════════
+// OPEN / CLOSE SESSION
+// ════════════════════════════════════════
+function openSession() {
+  if (!S.players.length) initPlayers();
+  $('homeScreen').style.display = 'none';
+  $('sessionScreen').classList.add('active');
+  S.inSession = true;
+  startTimer();
+  renderPlayers();
+  renderStackGrid();
+  renderStandingSelects();
+  renderLive();
+  switchTab('t-seats');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+window.openSession = openSession;
+
+function closeSession() {
+  $('sessionScreen').classList.remove('active');
+  $('homeScreen').style.display = 'block';
+  S.inSession = false;
+  stopTimer();
+}
+
+function resetSession() {
+  S.players.forEach(p => { p.total = 0; p.locked = false; });
+  S.sel = null; S.amt = null; S.stacks = {}; S.notes = '';
+  S.standings = { first: null, second: null, third: null };
+  S.tourney = false; S.payout = 'topHeavy';
+  $('confirmBtn').disabled = true;
+  $('customAmt').value = '';
+  $('sessionNotes').value = '';
+  $('tournToggle').checked = false;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
+  $('payoutSection').classList.add('hidden');
+  $('modeDesc').textContent = 'Cash game: payouts match final stacks entered.';
+  $('buyinMsg').textContent = '';
+  $('seatMsg').textContent = '';
+  updateBadge();
+}
+
+// ════════════════════════════════════════
+// PAYOUT MATH
+// ════════════════════════════════════════
+function buildSummary(snapshot) {
+  const pool = snapshot.reduce((s, p) => s + p.total, 0);
+  const standings = getStandings(snapshot);
+  const plan = S.tourney
+    ? (S.payout === 'refundThird' ? computeRefund(pool, standings) : computeTopHeavy(pool, standings))
+    : computeEven(snapshot);
+
+  const ledger = snapshot.map(p => ({
+    name: p.name,
+    buyins: p.total,
+    payout: plan.payouts.get(p.name) || 0,
+    net: (plan.payouts.get(p.name) || 0) - p.total
+  })).sort((a, b) => b.buyins - a.buyins);
+
+  // Work out who physically pays who to settle up
+  const payers    = ledger.filter(r => r.net < -0.005).map(r => ({...r})).sort((a,b) => a.net - b.net);
+  const receivers = ledger.filter(r => r.net >  0.005).map(r => ({...r})).sort((a,b) => b.net - a.net);
+  const transfers = [];
+  let pi = 0, ri = 0;
+  while (pi < payers.length && ri < receivers.length) {
+    const py = payers[pi], rc = receivers[ri];
+    const a = Math.min(rc.net, -py.net);
+    transfers.push({ from: py.name, to: rc.name, amount: a });
+    py.net += a; rc.net -= a;
+    if (Math.abs(py.net) < 0.01) pi++;
+    if (Math.abs(rc.net) < 0.01) ri++;
+  }
+  return { totalPool: pool, ledger, transfers, description: plan.desc };
+}
+
+function getStandings(snap) {
+  const m = [];
+  ['first','second','third'].forEach(k => {
+    const pick = S.standings[k]; if (!pick) return;
+    const p = snap.find(x => x.name === pick);
+    if (p && !m.includes(p)) m.push(p);
+  });
+  return m.concat(snap.filter(p => !m.includes(p)).sort((a,b) => b.stack - a.stack));
+}
+
+function computeEven(snap) {
+  const payouts = new Map();
+  snap.forEach(p => payouts.set(p.name, p.stack));
+  return { payouts, desc: 'Cash game — payouts match stacks entered.' };
+}
+
+function computeTopHeavy(pool, standings) {
+  const payouts = new Map();
+  // Everyone else gets 0 — they paid their buy-in and lost
+  // 1st gets 66%, 2nd gets 34% (remainder ensures pool is fully paid out)
+  let first  = Math.round(pool * 0.66 * 100) / 100;
+  let second = Math.round((pool - first) * 100) / 100;
+  if (standings[0]) payouts.set(standings[0].name, first);
+  if (standings[1]) payouts.set(standings[1].name, second);
+  return { payouts, desc: `Tournament — 1st gets ${fmt(first)}, 2nd gets ${fmt(second)}. Total pool: ${fmt(pool)}.` };
+}
+
+function computeRefund(pool, standings) {
+  const payouts = new Map();
+  const t3 = standings[2];
+  let ref = 0;
+  // 3rd gets their buy-in back first
+  if (t3) {
+    ref = Math.min(t3.total, pool);
+    payouts.set(t3.name, ref);
+  }
+  const rem = Math.max(pool - ref, 0);
+  // Remaining split 60% to 1st, 40% to 2nd
+  let first  = Math.round(rem * 0.6 * 100) / 100;
+  let second = Math.round((rem - first) * 100) / 100;
+  if (standings[0]) payouts.set(standings[0].name, (payouts.get(standings[0].name) || 0) + first);
+  if (standings[1]) payouts.set(standings[1].name, (payouts.get(standings[1].name) || 0) + second);
+  return { payouts, desc: `Tournament — 3rd gets ${fmt(ref)} back, 1st gets ${fmt(first)}, 2nd gets ${fmt(second)}. Total pool: ${fmt(pool)}.` };
+}
+
+// ════════════════════════════════════════
+// RENDER SUMMARY
+// ════════════════════════════════════════
+function renderSummary(sum) {
+  const el = $('summaryCard'), ct = $('summaryContent');
+  el.classList.remove('hidden');
+  const tHTML = sum.transfers.length
+    ? sum.transfers.map(t => `<div class="t-card"><span><strong>${t.from}</strong></span><span class="arrow">→</span><span><strong>${t.to}</strong></span><span class="amt">${fmt(t.amount)}</span></div>`).join('')
+    : `<div class="t-card settled"><span style="color:var(--win)">✓ Everyone is square!</span></div>`;
+  const lRows = sum.ledger.map(r => `<tr><td>${r.name}</td><td>${fmt(r.buyins)}</td><td>${fmt(r.payout)}</td><td class="${r.net>=0?'win':'lose'}">${fmtS(r.net)}</td></tr>`).join('');
+  ct.innerHTML = `
+    <p style="font-size:.66rem;opacity:.4;margin-bottom:.9rem;">${sum.description||''}</p>
+    <div class="lbl" style="margin-bottom:.4rem;">Who Pays Who</div>
+    <div style="display:flex;flex-direction:column;gap:.35rem;margin-bottom:1.2rem;">${tHTML}</div>
+    <div class="lbl" style="margin-bottom:.4rem;">Full Ledger</div>
+    <table class="ledger"><thead><tr><th>Player</th><th>Bought In</th><th>Payout</th><th>Net</th></tr></thead><tbody>${lRows}</tbody></table>
+    <p style="font-size:.6rem;opacity:.28;margin-top:.7rem;">Total pool: ${fmt(sum.totalPool)}</p>`;
+}
+
+// ════════════════════════════════════════
+// SAVE SESSION
+// ════════════════════════════════════════
+function saveSession(sum) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    mode: S.tourney ? 'tournament' : 'cash',
+    notes: $('sessionNotes').value.trim(),
+    totalPool: Number(sum.totalPool.toFixed(2)),
+    ledger: sum.ledger.map(r => ({
+      name: String(r.name),
+      buyins: Number(r.buyins.toFixed(2)),
+      payout: Number(r.payout.toFixed(2)),
+      net: Number(r.net.toFixed(2))
+    })),
+    transfers: sum.transfers.map(t => ({
+      from: String(t.from),
+      to: String(t.to),
+      amount: Number(t.amount.toFixed(2))
+    }))
+  };
+  // Save locally always
+  try {
+    const h = JSON.parse(localStorage.getItem('ep_hist') || '[]');
+    h.push(entry);
+    localStorage.setItem('ep_hist', JSON.stringify(h));
+  } catch(e) {}
+  // Push to Firebase
+  db.ref('sessions').push(entry)
+    .then(() => syncStatus('✓ Saved to cloud', 'ok'))
+    .catch(err => { console.warn('FB err:', err); syncStatus('Saved locally only', 'err'); });
+}
+
+// ════════════════════════════════════════
+// HISTORY
+// ════════════════════════════════════════
+function renderHistory() {
+  const card = $('historyCard'), el = $('historyContent');
+  if (!S.history.length) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+  el.innerHTML = `<div class="h-list">` + [...S.history].reverse().map((h, ri) => {
+    const i = S.history.length - 1 - ri;
+    const d = new Date(h.timestamp);
+    const ds = d.toLocaleDateString('en-IE', { weekday:'short', year:'numeric', month:'short', day:'numeric' });
+    const top = (h.ledger || []).slice().sort((a,b) => b.net - a.net)[0];
+    const isTn = h.mode === 'tournament';
+    return `<div class="h-entry">
+      <div class="h-detail">
+        <div class="h-date">${ds} · <span style="color:${isTn?'var(--win)':'var(--gold)'};font-size:.56rem">${isTn?'♣ Tournament':'♠ Cash'}</span></div>
+        <div class="h-main">Pool: <strong>${fmt(h.totalPool||0)}</strong>${top?` · Top: <strong style="color:var(--win)">${top.name} ${fmtS(top.net)}</strong>`:''}<br/><span style="opacity:.35">${(h.ledger||[]).map(r=>r.name).join(', ')}</span></div>
+        ${h.notes?`<div class="h-note">📝 ${h.notes}</div>`:''}
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="deleteSession('${S.fbKeys[i]||''}',${i})">Delete</button>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+function deleteSession(fbKey, localIndex) {
+  if (!confirm('Delete this session from ALL phones?')) return;
+  if (fbKey) db.ref('sessions/' + fbKey).remove().catch(() => {});
+  S.history.splice(localIndex, 1);
+  try { localStorage.setItem('ep_hist', JSON.stringify(S.history)); } catch(e) {}
+  renderHistory();
+  renderLeaderboard();
+}
+
+// ════════════════════════════════════════
+// LEADERBOARD
+// ════════════════════════════════════════
+function buildStats(mode) {
+  const d = {};
+  S.history
+    .filter(h => mode === 'all' || h.mode === mode)
+    .forEach(h => (h.ledger || []).forEach(r => {
+      if (!d[r.name]) d[r.name] = { name:r.name, games:0, wins:0, net:0, best:0, bestDate:null };
+      d[r.name].games++;
+      d[r.name].net += r.net;
+      if (r.net > 0) d[r.name].wins++;
+      if (r.net > d[r.name].best) { d[r.name].best = r.net; d[r.name].bestDate = h.timestamp; }
+    }));
+  return Object.values(d).sort((a,b) => b.net - a.net);
+}
+
+function getBest(mode) {
+  let best = null;
+  S.history
+    .filter(h => mode === 'all' || h.mode === mode)
+    .forEach(h => (h.ledger||[]).forEach(r => {
+      if (!best || r.net > best.net) best = { name:r.name, net:r.net, date:h.timestamp };
+    }));
+  return best;
+}
+
+function buildChart(canvasId, players, existing) {
+  if (existing) existing.destroy();
+  if (!players.length) return null;
+  return new Chart($(canvasId).getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: players.map(p => p.name),
+      datasets: [{
+        data: players.map(p => +p.net.toFixed(2)),
+        backgroundColor: players.map(p => p.net >= 0 ? 'rgba(93,186,122,.5)' : 'rgba(224,80,80,.45)'),
+        borderColor:      players.map(p => p.net >= 0 ? 'rgba(93,186,122,.9)' : 'rgba(224,80,80,.9)'),
+        borderWidth: 1, borderRadius: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend:{display:false}, tooltip:{callbacks:{label:c=>' €'+c.raw.toFixed(2)}} },
+      scales: {
+        x: { ticks:{color:'rgba(245,239,224,.45)',font:{family:"'IBM Plex Mono',monospace",size:9}}, grid:{color:'rgba(201,168,76,.04)'} },
+        y: { ticks:{color:'rgba(245,239,224,.45)',font:{family:"'IBM Plex Mono',monospace",size:9},callback:v=>'€'+v}, grid:{color:'rgba(201,168,76,.06)'} }
+      }
+    }
+  });
+}
+
+function renderPodium(elId, players) {
+  const el = $(elId);
+  const top3 = players.slice(0, 3);
+  if (!top3.length) { el.innerHTML = ''; return; }
+  const medals = ['🥇','🥈','🥉'], cls = ['p1','p2','p3'];
+  el.innerHTML = top3.map((p,i) => `
+    <div class="pod ${cls[i]}">
+      <div class="pod-medal">${medals[i]}</div>
+      <div class="pod-name">${p.name}</div>
+      <div class="pod-net ${p.net>=0?'win':'lose'}">${fmtS(p.net)}</div>
+      <div class="pod-meta">${p.games}g · ${p.wins}w</div>
+    </div>`).join('');
+}
+
+function renderTable(elId, players) {
+  const el = $(elId);
+  if (!players.length) { el.innerHTML = '<p style="font-size:.68rem;opacity:.35;padding:.5rem 0;">No games yet.</p>'; return; }
+  el.innerHTML = players.map((p,i) => `
+    <div class="lb-row">
+      <span class="rk">${i+1}</span>
+      <span>${p.name}</span>
+      <span class="rnet ${p.net>=0?'win':'lose'}">${fmtS(p.net)}</span>
+      <span class="rmeta">${p.games}g</span>
+      <span class="rmeta">${p.wins}w · ${p.games?Math.round(p.wins/p.games*100):0}%</span>
+    </div>`).join('');
+}
+
+function renderLeaderboard() {
+  if (!S.history.length) {
+    ['cashSection','tournSection','allSection'].forEach(id => $(id).classList.add('hidden'));
+    return;
+  }
+  const cp = buildStats('cash'), tp = buildStats('tournament'), ap = buildStats('all');
+
+  // Cash
+  if (cp.length) {
+    $('cashSection').classList.remove('hidden');
+    renderPodium('cashPodium', cp);
+    renderTable('cashTable', cp);
+    charts.cash = buildChart('cashChart', cp, charts.cash);
+    const b = getBest('cash');
+    if (b && b.net > 0) {
+      const d = new Date(b.date).toLocaleDateString('en-IE',{day:'numeric',month:'short',year:'numeric'});
+      $('cashBest').innerHTML = `<span style="opacity:.4;font-size:.56rem">Best night</span><br/><strong style="color:var(--gold)">${b.name} ${fmtS(b.net)}</strong><br/><span style="opacity:.32;font-size:.54rem">${d}</span>`;
+    }
+  } else $('cashSection').classList.add('hidden');
+
+  // Tournament
+  if (tp.length) {
+    $('tournSection').classList.remove('hidden');
+    renderPodium('tournPodium', tp);
+    renderTable('tournTable', tp);
+    charts.tourn = buildChart('tournChart', tp, charts.tourn);
+    const b = getBest('tournament');
+    if (b && b.net > 0) {
+      const d = new Date(b.date).toLocaleDateString('en-IE',{day:'numeric',month:'short',year:'numeric'});
+      $('tournBest').innerHTML = `<span style="opacity:.4;font-size:.56rem">Best night</span><br/><strong style="color:var(--win)">${b.name} ${fmtS(b.net)}</strong><br/><span style="opacity:.32;font-size:.54rem">${d}</span>`;
+    }
+  } else $('tournSection').classList.add('hidden');
+
+  // All
+  if (ap.length) {
+    $('allSection').classList.remove('hidden');
+    renderTable('allTable', ap);
+    charts.all = buildChart('allChart', ap, charts.all);
+    const b = getBest('all');
+    if (b && b.net > 0) {
+      $('bestBanner').classList.remove('hidden');
+      $('bestVal').innerHTML = `<span style="color:var(--win)">${b.name}</span> &nbsp;${fmtS(b.net)}`;
+      $('bestMeta').textContent = new Date(b.date).toLocaleDateString('en-IE',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+    } else $('bestBanner').classList.add('hidden');
+  } else $('allSection').classList.add('hidden');
+}
+
+// ════════════════════════════════════════
+// END SESSION
+// ════════════════════════════════════════
+function doEnd() {
+  const snap = S.players.filter(p => p.locked).map(p => ({...p, stack: Number(S.stacks[p.name]) || 0}));
+  if (!snap.length) { alert('No players have bought in yet.'); return; }
+  if (!confirm(`End session?\n${snap.length} players · Pool: ${fmt(snap.reduce((s,p) => s+p.total, 0))}\n${S.tourney?'♣ Tournament':'♠ Cash game'}`)) return;
+  const sum = buildSummary(snap);
+  // Show results immediately
+  renderSummary(sum);
+  closeSession();
+  resetSession();
+  setTimeout(() => $('summaryCard').scrollIntoView({ behavior:'smooth', block:'start' }), 150);
+  // Save in background
+  saveSession(sum);
+}
+window.doEnd = doEnd;
+
+// ════════════════════════════════════════
+// FIREBASE SYNC
+// ════════════════════════════════════════
+function syncFromFirebase() {
+  syncStatus('Syncing…', 'syncing');
+  db.ref('sessions').on('value', snap => {
+    S.history = []; S.fbKeys = {};
+    const data = snap.val();
+    if (data) {
+      Object.entries(data).forEach(([key, val]) => {
+        S.fbKeys[S.history.length] = key;
+        S.history.push(val);
+      });
+      // Sort by date
+      const paired = S.history.map((h,i) => ({h, k:S.fbKeys[i]})).sort((a,b) => new Date(a.h.timestamp) - new Date(b.h.timestamp));
+      S.history = paired.map(p => p.h);
+      paired.forEach((p,i) => { S.fbKeys[i] = p.k; });
+    }
+    // Merge local sessions not yet in Firebase
+    try {
+      const local = JSON.parse(localStorage.getItem('ep_hist') || '[]');
+      local.forEach(ls => {
+        if (!S.history.some(h => h.timestamp === ls.timestamp)) S.history.push(ls);
+      });
+      S.history.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+    } catch(e) {}
+
+    syncStatus('');
+    renderHistory();
+    renderLeaderboard();
+    if (S.history.length) $('introHero').classList.add('hidden');
+    else $('introHero').classList.remove('hidden');
+  }, () => {
+    syncStatus('Offline — using local data', 'err');
+    try { S.history = JSON.parse(localStorage.getItem('ep_hist') || '[]'); } catch(e) {}
+    renderHistory();
+    renderLeaderboard();
+    if (S.history.length) $('introHero').classList.add('hidden');
+  });
+}
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+window.addEventListener('load', () => {
+  initPlayers();
+  syncFromFirebase();
+});
+</script>
+</body>
+</html>
